@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CSV Entry Tool</title>
+  <link rel="stylesheet" href="lib/css/water.css" />
+  <link rel="stylesheet" href="lib/css/jquery.dataTables.min.css"/>
+  <style>
+    body {
+      max-width: 80%;
+    }
+    td input[type="checkbox"] {
+      transform: scale(1.2);
+    }
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    #demo-form input {
+      max-width: 80%;
+    }
+    tbody tr:nth-child(even) {
+      background-color: inherit;
+    }
+    #upload-form input {
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Financial Data Entry Tool</h1>
+
+  <form id="upload-form" enctype="multipart/form-data">
+    <input type="file" name="csv" id="csv" accept=".csv" required />
+    <button type="submit">Upload CSV</button>
+  </form>
+
+  <div class="action-buttons">
+    <button id="run-selector">▶️ Run Selector</button>
+    <button id="run-entry">⌨️ Run Data Entry</button>
+    <button id="mark-complete">✅ Mark as Complete</button>
+    <button id="reset">♻️ Reset</button>
+    <label>
+      <input type="checkbox" id="hide-completed" />
+      Hide completed
+    </label>
+  </div>
+
+  <div id="countdown" style="font-size: 1.5em; font-weight: bold; margin-top: 1rem;"></div>
+
+  <table id="data-table" class="display" style="width:100%">
+    <thead>
+      <tr>
+        <th>Select</th>
+        <th>Name</th>
+        <th>Account Number</th>
+        <th>Sort Code</th>
+        <th>Reference</th>
+        <th>Amount</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <h2>💻 Demo Data Entry Form</h2>
+<p>Click into the first box (or press the "Focus Here" button) before using <strong>Run Data Entry</strong>.</p>
+
+<form id="demo-form" onsubmit="return false;">
+  <button type="button" onclick="document.getElementById('ref-1').focus()">Focus First Row</button><br><br>
+
+  <table style="width:100%; border-collapse: collapse;" border="1">
+    <thead>
+      <tr>
+        <th>Reference</th>
+        <th>Amount</th>
+        <th>Other Field 1</th>
+        <th>Other Field 2</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="text" id="ref-1" name="ref-1" /></td>
+        <td><input type="text" id="amt-1" name="amt-1" /></td>
+        <td><input type="text" id="other1-1" name="other1-1" /></td>
+        <td><input type="text" id="other2-1" name="other2-1" /></td>
+      </tr>
+      <tr>
+        <td><input type="text" id="ref-2" name="ref-2" /></td>
+        <td><input type="text" id="amt-2" name="amt-2" /></td>
+        <td><input type="text" id="other1-2" name="other1-2" /></td>
+        <td><input type="text" id="other2-2" name="other2-2" /></td>
+      </tr>
+      <tr>
+        <td><input type="text" id="ref-3" name="ref-3" /></td>
+        <td><input type="text" id="amt-3" name="amt-3" /></td>
+        <td><input type="text" id="other1-3" name="other1-3" /></td>
+        <td><input type="text" id="other2-3" name="other2-3" /></td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+
+
+
+  <script src="lib/js/jquery-3.7.1.min.js"></script>
+  <script src="lib/js/jquery.dataTables.min.js"></script>
+  <script src="lib/js/papaparse.min.js"></script>
+
+  <script>
+    let table;
+
+    function loadTableFromStorage() {
+      const data = JSON.parse(localStorage.getItem('csvData') || '[]');
+
+      // Destroy existing table first, if any
+      if ($.fn.DataTable.isDataTable('#data-table')) {
+        $('#data-table').DataTable().clear().destroy();
+      }
+
+      const tbody = $('#data-table tbody');
+      tbody.empty();
+
+      data.forEach((row, index) => {
+        tbody.append(`
+          <tr data-index="${index}" class="${row.completed ? 'completed' : ''}">
+            <td><input type="checkbox" class="row-check" ${row.selected ? 'checked' : ''}></td>
+            <td>${row.name}</td>
+            <td>${row.accountNumber}</td>
+            <td>${row.sortCode}</td>
+            <td>${row.reference}</td>
+            <td>${row.amount}</td>
+            <td>${row.completed ? '✅ Done' : ''}</td>
+          </tr>
+        `);
+      });
+      // Add global custom filtering for 'Hide completed'
+      $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        const hideCompleted = $('#hide-completed').is(':checked');
+        const status = data[5]; // 6th column is 'Status'
+
+        if (!hideCompleted) return true; // show everything
+        return !status.includes('✅'); // hide if status is marked as done
+      });
+
+      table = $('#data-table').DataTable(); // Re-initialise after DOM updates
+    }
+
+    function saveTableToStorage() {
+      const updatedData = [];
+      $('#data-table tbody tr').each(function () {
+        const index = $(this).data('index');
+        const row = {
+          name: $(this).find('td:eq(1)').text(),
+          accountNumber: $(this).find('td:eq(2)').text(),
+          sortCode: $(this).find('td:eq(3)').text(),
+          reference: $(this).find('td:eq(4)').text(),
+          amount: $(this).find('td:eq(5)').text(),
+          selected: $(this).find('.row-check').is(':checked'),
+          completed: $(this).hasClass('completed')
+        };
+        updatedData[index] = row;
+      });
+      localStorage.setItem('csvData', JSON.stringify(updatedData));
+    }
+
+    $('#upload-form').on('submit', function (e) {
+  e.preventDefault();
+
+  const fileInput = document.getElementById('csv');
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert('Please choose a CSV file');
+    return;
+  }
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      console.log(results);
+      const parsed = results.data.map(row => ({
+        name: row["Name of recipient"],
+        accountNumber: row.accountNumber || row["Recipient account number"],
+        sortCode: row.sortCode || row["Recipient sort code"],
+        reference: row.reference || row["Reference"],
+        amount: row.amount || row["Amount"],
+        selected: false,
+        completed: false
+      }));
+
+      localStorage.setItem('csvData', JSON.stringify(parsed));
+      loadTableFromStorage();
+    },
+    error: function(err) {
+      alert('Error parsing CSV: ' + err.message);
+    }
+  });
+});
+
+
+    $('#run-selector').on('click', function () {
+      saveTableToStorage();
+      const selectedRows = getSelectedRows();
+      if (!selectedRows.length) return alert('Select at least one row!');
+      runCountdown(() => {
+        fetch('/run-selector', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ rows: selectedRows })
+        });
+      });
+    });
+
+    $('#run-entry').on('click', function () {
+      saveTableToStorage();
+      const selectedRows = getSelectedRows();
+      if (!selectedRows.length) return alert('Select at least one row!');
+      runCountdown(() => {
+        fetch('/run-data-entry', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ rows: selectedRows })
+        });
+      });
+    });
+
+    $('#mark-complete').on('click', function () {
+      $('#data-table tbody tr').each(function () {
+        const $checkbox = $(this).find('.row-check');
+        const isChecked = $checkbox.is(':checked');
+        const rowIndex = table.row(this).index();
+
+        if (isChecked) {
+          const rowData = table.row(this).data();
+          rowData[5] = '✅ Done'; // Update the 'Status' column
+          table.row(this).data(rowData).invalidate(); // Update DataTable's internal state
+        }
+      });
+
+      saveTableToStorage();
+      table.draw(); // reapply filters
+    });
+
+
+    $('#reset').on('click', function () {
+      if (confirm('Clear all uploaded data?')) {
+        localStorage.removeItem('csvData');
+        loadTableFromStorage();
+      }
+    });
+
+    $('#hide-completed').on('change', function () {
+      if (table) table.draw(); // re-filter the table when checkbox changes
+    });
+
+    function getSelectedRows() {
+      const rows = [];
+      $('#data-table tbody tr').each(function () {
+        if ($(this).find('.row-check').is(':checked')) {
+          rows.push({
+            name: $(this).find('td:eq(1)').text(),
+            accountNumber: $(this).find('td:eq(2)').text(),
+            sortCode: $(this).find('td:eq(3)').text(),
+            reference: $(this).find('td:eq(4)').text(),
+            amount: $(this).find('td:eq(5)').text()
+          });
+        }
+      });
+      return rows;
+    }
+
+    function runCountdown(callback) {
+      const countdownEl = document.getElementById("countdown");
+      let seconds = 3;
+      countdownEl.textContent = `⏳ Starting in ${seconds}...`;
+
+      const interval = setInterval(() => {
+        seconds--;
+        if (seconds > 0) {
+          countdownEl.textContent = `⏳ Starting in ${seconds}...`;
+        } else {
+          clearInterval(interval);
+          countdownEl.textContent = ''; // clear after countdown
+          callback();
+        }
+      }, 1000);
+    }
+
+
+    // Initial load
+    $(document).ready(() => {
+      loadTableFromStorage();
+    });
+  </script>
+</body>
+</html>
