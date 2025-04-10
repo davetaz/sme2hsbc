@@ -41,7 +41,6 @@ app.post("/run-data-entry", async (req, res) => {
     await keyboard.type(row.amount);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
-    await keyboard.type(Key.Tab);
     await sleep(300);
   }
 
