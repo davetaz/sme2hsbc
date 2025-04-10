@@ -15,7 +15,7 @@ app.post("/run-selector", async (req, res) => {
   for (const row of rows) {
     await keyboard.type(row.accountNumber);
     await keyboard.type(Key.Enter);
-    await sleep(1000);
+    await sleep(2000);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
