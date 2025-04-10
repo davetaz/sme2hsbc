@@ -15,10 +15,12 @@ app.post("/run-selector", async (req, res) => {
   for (const row of rows) {
     await keyboard.type(row.accountNumber);
     await keyboard.type(Key.Enter);
+    await sleep(1000);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Space);
+    await sleep(300);
     await keyboard.pressKey(Key.LeftShift);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
