@@ -54,6 +54,7 @@
     <thead>
       <tr>
         <th>Select</th>
+        <th>Payment Date</th>
         <th>Name</th>
         <th>Account Number</th>
         <th>Sort Code</th>
@@ -126,6 +127,7 @@
         tbody.append(`
           <tr data-index="${index}" class="${row.completed ? 'completed' : ''}">
             <td><input type="checkbox" class="row-check" ${row.selected ? 'checked' : ''}></td>
+            <td>${row.paymentDate}</td>
             <td>${row.name}</td>
             <td>${row.accountNumber}</td>
             <td>${row.sortCode}</td>
@@ -152,11 +154,12 @@
       $('#data-table tbody tr').each(function () {
         const index = $(this).data('index');
         const row = {
-          name: $(this).find('td:eq(1)').text(),
-          accountNumber: $(this).find('td:eq(2)').text(),
-          sortCode: $(this).find('td:eq(3)').text(),
-          reference: $(this).find('td:eq(4)').text(),
-          amount: $(this).find('td:eq(5)').text(),
+          paymentDate: $(this).find('td:eq(1)').text(),
+          name: $(this).find('td:eq(2)').text(),
+          accountNumber: $(this).find('td:eq(3)').text(),
+          sortCode: $(this).find('td:eq(4)').text(),
+          reference: $(this).find('td:eq(5)').text(),
+          amount: $(this).find('td:eq(6)').text(),
           selected: $(this).find('.row-check').is(':checked'),
           completed: $(this).hasClass('completed')
         };
@@ -182,6 +185,7 @@
     complete: function(results) {
       console.log(results);
       const parsed = results.data.map(row => ({
+        paymentDate: row["Future payment date"],
         name: row["Name of recipient"],
         accountNumber: row.accountNumber || row["Recipient account number"],
         sortCode: row.sortCode || row["Recipient sort code"],
@@ -235,7 +239,7 @@
 
         if (isChecked) {
           const rowData = table.row(this).data();
-          rowData[5] = '✅ Done'; // Update the 'Status' column
+          rowData[6] = '✅ Done'; // Update the 'Status' column
           table.row(this).data(rowData).invalidate(); // Update DataTable's internal state
         }
       });
@@ -261,11 +265,12 @@
       $('#data-table tbody tr').each(function () {
         if ($(this).find('.row-check').is(':checked')) {
           rows.push({
-            name: $(this).find('td:eq(1)').text(),
-            accountNumber: $(this).find('td:eq(2)').text(),
-            sortCode: $(this).find('td:eq(3)').text(),
-            reference: $(this).find('td:eq(4)').text(),
-            amount: $(this).find('td:eq(5)').text()
+            paymentDate: $(this).find('td:eq(1)').text(),
+            name: $(this).find('td:eq(2)').text(),
+            accountNumber: $(this).find('td:eq(3)').text(),
+            sortCode: $(this).find('td:eq(4)').text(),
+            reference: $(this).find('td:eq(5)').text(),
+            amount: $(this).find('td:eq(6)').text()
           });
         }
       });
