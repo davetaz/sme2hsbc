@@ -140,7 +140,7 @@
       // Add global custom filtering for 'Hide completed'
       $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
         const hideCompleted = $('#hide-completed').is(':checked');
-        const status = data[5]; // 6th column is 'Status'
+        const status = data[7]; // 6th column is 'Status'
 
         if (!hideCompleted) return true; // show everything
         return !status.includes('✅'); // hide if status is marked as done
@@ -235,20 +235,20 @@
       $('#data-table tbody tr').each(function () {
         const $checkbox = $(this).find('.row-check');
         const isChecked = $checkbox.is(':checked');
-        const rowIndex = table.row(this).index();
 
         if (isChecked) {
           const rowData = table.row(this).data();
-          rowData[6] = '✅ Done'; // Update the 'Status' column
+          // Add the class so saveTableToStorage sees it
+          $(this).addClass('completed');
+          rowData[7] = '✅ Done';
           table.row(this).data(rowData).invalidate(); // Update DataTable's internal state
         }
       });
 
       saveTableToStorage();
-      table.draw(); // reapply filters
+      table.draw(); // reapply filters like 'hide completed'
     });
-
-
+    
     $('#reset').on('click', function () {
       if (confirm('Clear all uploaded data?')) {
         localStorage.removeItem('csvData');
