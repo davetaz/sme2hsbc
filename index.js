@@ -1,6 +1,7 @@
 // app.js
 const express = require("express");
 const { keyboard, Key, sleep } = require("@nut-tree-fork/nut-js");
+let cancelled = false;
 
 keyboard.config.autoDelayMs = 80;         // Default is 300ms
 keyboard.config.delayBetweenKeystrokes = 80; // Controls typing speed
@@ -13,14 +14,18 @@ app.use(express.static("public"));
 app.post("/run-selector", async (req, res) => {
   const rows = req.body.rows;
   for (const row of rows) {
+    if (cancelled) break;
     await keyboard.type(row.accountNumber);
+    if (cancelled) break;
     await keyboard.type(Key.Enter);
     await sleep(2000);
+    if (cancelled) break;
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Space);
     await sleep(300);
+    if (cancelled) break;
     await keyboard.pressKey(Key.LeftShift);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
@@ -36,14 +41,28 @@ app.post("/run-data-entry", async (req, res) => {
   
   const rows = req.body.rows;
   for (const row of rows) {
+    if (cancelled) break;
     await keyboard.type(row.reference);
+    if (cancelled) break;
     await keyboard.type(Key.Tab);
+    if (cancelled) break;
     await keyboard.type(row.amount);
     await keyboard.type(Key.Tab);
     await keyboard.type(Key.Tab);
     await sleep(300);
+    if (cancelled) break;
   }
 
+  res.json({ success: true });
+});
+
+app.post("/go", (req, res) => {
+  cancelled = false;
+  res.json({ success: true });
+});
+
+app.post("/stop", (req, res) => {
+  cancelled = true;
   res.json({ success: true });
 });
 
