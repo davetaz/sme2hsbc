@@ -37,7 +37,8 @@
     top: 0; left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(255,0,0,0.9);
+    background-color: rgba(0, 0, 0, 0.4); /* dark transparent background */
+    backdrop-filter: blur(3px); /* optional blur effect */
     color: white;
     display: none;
     flex-direction: column;
@@ -47,24 +48,20 @@
     font-size: 2em;
     text-align: center;
   ">
-    <div id="countdown-text" style="margin-bottom: 2rem;">⏳ Starting in 3...</div>
-    <button id="stop-button" style="padding: 1em 2em; font-size: 1.5em; background: white; color: red; border: none; cursor: pointer;">
-      🛑 Stop Automation
-    </button>
+    <div style="background: white; color: red; padding: 2rem; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.4);">
+      <div id="countdown-text" style="margin-bottom: 1rem;">⏳ Starting in 3...</div>
+      <div id="current-row" style="font-size: 1rem; color: black; margin-bottom: 1rem;"></div>
+      <button id="stop-button">🛑 Stop Automation</button>    
     
     <form id="demo-form" onsubmit="return false;" style="display:none;">
-      <h2>💻 Demo Data Entry Form</h2>
-      <p>Click into the first box (or press the "Focus Here" button) before using <strong>Run Data Entry</strong>.</p>
-
       <button type="button" onclick="document.getElementById('ref-1').focus()">Focus First Row</button><br><br>
 
-      <table style="width:100%; border-collapse: collapse;" border="1">
+      <table style="width:50%; border-collapse: collapse; font-size: 0.5em; margin-left: auto; margin-right: auto;" border="1">
         <thead>
           <tr>
             <th>Reference</th>
             <th>Amount</th>
             <th>Other Field 1</th>
-            <th>Other Field 2</th>
           </tr>
         </thead>
         <tbody>
@@ -72,24 +69,22 @@
             <td><input type="text" id="ref-1" name="ref-1" /></td>
             <td><input type="text" id="amt-1" name="amt-1" /></td>
             <td><input type="text" id="other1-1" name="other1-1" /></td>
-            <td><input type="text" id="other2-1" name="other2-1" /></td>
           </tr>
           <tr>
             <td><input type="text" id="ref-2" name="ref-2" /></td>
             <td><input type="text" id="amt-2" name="amt-2" /></td>
             <td><input type="text" id="other1-2" name="other1-2" /></td>
-            <td><input type="text" id="other2-2" name="other2-2" /></td>
           </tr>
           <tr>
             <td><input type="text" id="ref-3" name="ref-3" /></td>
             <td><input type="text" id="amt-3" name="amt-3" /></td>
             <td><input type="text" id="other1-3" name="other1-3" /></td>
-            <td><input type="text" id="other2-3" name="other2-3" /></td>
           </tr>
         </tbody>
       </table>
     </form>
   </div>
+</div>
 
   <form id="upload-form" enctype="multipart/form-data">
     <input type="file" name="csv" id="csv" accept=".csv" required />
@@ -137,6 +132,7 @@
     function hideStopOverlay() {
       $('#stop-overlay').hide();
       document.getElementById("countdown-text").textContent = '';
+      document.getElementById('current-row').innerHTML = '';
     }
     function showDemoFormIfTesting() {
       const params = new URLSearchParams(window.location.search);
@@ -331,11 +327,27 @@
           countdownText.textContent = `⏳ Starting in ${seconds}...`;
         } else {
           clearInterval(interval);
-          countdownText.textContent = '';
+          countdownText.textContent = 'Current Row';
           callback(); // kick off automation
         }
       }, 1000);
     }
+    const ws = new WebSocket('ws://localhost:3001');
+
+    ws.onmessage = function(event) {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'row') {
+        const { accountNumber, sortCode, reference, amount } = msg.data;
+        const display = `
+          <strong>Current Row:</strong><br>
+          Account: ${accountNumber}<br>
+          Sort Code: ${sortCode}<br>
+          Reference: ${reference}<br>
+          Amount: ${amount}
+        `;
+        document.getElementById('current-row').innerHTML = display;
+      }
+    };
 
     // Initial load
     $(document).ready(() => {

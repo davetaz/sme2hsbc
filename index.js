@@ -11,9 +11,25 @@ const app = express();
 app.use(express.json());
 app.use(express.static("public"));
 
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 3001 });
+
+let connectedClient = null;
+
+wss.on('connection', (ws) => {
+  console.log('Client connected');
+  connectedClient = ws;
+});
+
 app.post("/run-selector", async (req, res) => {
   const rows = req.body.rows;
   for (const row of rows) {
+    if (connectedClient && connectedClient.readyState === WebSocket.OPEN) {
+      connectedClient.send(JSON.stringify({
+        type: 'row',
+        data: row
+      }));
+    }
     if (cancelled) break;
     await keyboard.type(row.accountNumber);
     if (cancelled) break;
@@ -41,6 +57,12 @@ app.post("/run-data-entry", async (req, res) => {
   
   const rows = req.body.rows;
   for (const row of rows) {
+    if (connectedClient && connectedClient.readyState === WebSocket.OPEN) {
+      connectedClient.send(JSON.stringify({
+        type: 'row',
+        data: row
+      }));
+    }
     if (cancelled) break;
     await keyboard.type(row.reference);
     if (cancelled) break;
