@@ -93,6 +93,9 @@
 
   <div class="action-buttons">
     <button id="run-selector">▶️ Run Selector</button>
+    <input type="number" id="delay-input" min="0" max="10" step="0.1" value="2" style="width: 60px;" />
+  </div>
+  <div class="action-buttons">
     <button id="run-entry">⌨️ Run Data Entry</button>
     <button id="mark-complete">✅ Mark as Complete</button>
     <button id="reset">♻️ Reset</button>
@@ -101,6 +104,10 @@
       Hide completed
     </label>
   </div>
+
+  <div id="selected-count" style="margin-top: 0.5rem; font-weight: bold; text-align: right;">
+    Selected Rows: 0
+  </div>  
 
   <table id="data-table" class="display" style="width:100%">
     <thead>
@@ -176,7 +183,14 @@
       });
 
       table = $('#data-table').DataTable(); // Re-initialise after DOM updates
+      bindCheckboxListeners(); // ✅ add listener
+      updateSelectedCount();   // ✅ update initial count
     }
+
+    function bindCheckboxListeners() {
+      $('#data-table tbody').on('change', '.row-check', updateSelectedCount);
+    }
+
 
     function saveTableToStorage() {
       const updatedData = [];
@@ -236,17 +250,24 @@
 
     $('#run-selector').on('click', function () {
       fetch('/go', { method: 'POST' });
+
       saveTableToStorage();
       const selectedRows = getSelectedRows();
       if (!selectedRows.length) return alert('Select at least one row!');
+
+      // Get delay value from input box
+      const seconds = parseFloat(document.getElementById('delay-input').value) || 0;
+      const delayMs = Math.max(0, Math.round(seconds * 1000)); // clamp to 0+
+
       runCountdown(() => {
         fetch('/run-selector', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ rows: selectedRows })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rows: selectedRows, delay: delayMs })
         }).then(hideStopOverlay);
       });
     });
+
 
     $('#run-entry').on('click', function () {
       fetch('/go', { method: 'POST' });
@@ -311,6 +332,11 @@
         }
       });
       return rows;
+    }
+
+    function updateSelectedCount() {
+      const count = $('#data-table tbody .row-check:checked').length;
+      document.getElementById('selected-count').textContent = `Selected Rows: ${count}`;
     }
 
     function runCountdown(callback) {
