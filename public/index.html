@@ -27,6 +27,9 @@
     #upload-form input {
       display: inline-block;
     }
+    button {
+      min-height: 45px;
+    }
   </style>
 </head>
 <body>
@@ -85,29 +88,59 @@
     </form>
   </div>
 </div>
+  <!-- Wrapper that splits left and right sides -->
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem; flex-wrap: wrap; margin-bottom: 1rem;">
 
-  <form id="upload-form" enctype="multipart/form-data">
-    <input type="file" name="csv" id="csv" accept=".csv" required />
-    <button type="submit">Upload CSV</button>
-  </form>
+  <!-- LEFT SIDE: All action buttons grouped -->
+  <div class="action-area" style="flex-grow: 1;">
 
-  <div class="action-buttons">
-    <button id="run-selector">▶️ Run Selector</button>
-    <input type="number" id="delay-input" min="0" max="10" step="0.1" value="2" style="width: 60px;" />
+    <!-- Upload + Reset -->
+    <div class="action-buttons">
+      <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" name="csv" id="csv" accept=".csv" required />
+        <button type="submit">📁 Upload CSV</button>
+      </form>
+      <button id="reset">♻️ Clear Data</button>
+    </div>
+
+    <!-- Run Selector + Delay -->
+    <div class="action-buttons">
+      <button id="run-selector">▶️ Run Selector</button>
+      <label for="delay-input" style="display: flex; align-items: center; gap: 0.3rem;">
+        Delay (sec):
+        <input type="number" id="delay-input" min="0" max="10" step="0.1" value="2" style="width: 60px;" />
+      </label>
+    </div>
+
+    <!-- Run Entry -->
+    <div class="action-buttons">
+      <button id="run-entry">⌨️ Run Data Entry</button>
+    </div>
+
   </div>
-  <div class="action-buttons">
-    <button id="run-entry">⌨️ Run Data Entry</button>
-    <button id="mark-complete">✅ Mark as Complete</button>
-    <button id="reset">♻️ Reset</button>
-    <label>
-      <input type="checkbox" id="hide-completed" />
-      Hide completed
-    </label>
-  </div>
 
-  <div id="selected-count" style="margin-top: 0.5rem; font-weight: bold; text-align: right;">
+  <!-- RIGHT SIDE: Table controls -->
+  <div class="table-buttons" style="text-align: right; min-width: 200px; display: flex; flex-direction: column; gap: 0.5rem;">
+
+  <!-- Selected count -->
+  <div id="selected-count" style="height: 43px; display: flex; align-items: center; justify-content: flex-end; font-weight: bold;">
     Selected Rows: 0
-  </div>  
+  </div>
+
+  <!-- Hide completed checkbox -->
+  <label for="hide-completed" style="display: flex; align-items: center; height: 38px; justify-content: flex-end; font-weight: bold;">
+    Hide completed&nbsp;&nbsp;
+    <input type="checkbox" id="hide-completed" />
+  </label>
+
+  <!-- Mark as complete button -->
+  <button id="mark-complete" style="height: 45px;">✅ Mark as Complete</button>
+
+</div>
+
+</div>
+
+
 
   <table id="data-table" class="display" style="width:100%">
     <thead>
